@@ -1,19 +1,15 @@
 #include <M5StickC.h>
-#include "DHT12.h"
 #include <Wire.h>
-#include "Adafruit_Sensor.h"
-#include <Adafruit_BMP280.h>
 
 #include "BLEDevice.h"
 #include "BLEServer.h"
 #include "BLEUtils.h"
 #include "esp_sleep.h"
 
-DHT12 dht12;
-Adafruit_BMP280 bme;
 
-#define T_PERIOD     10   // Transmission period
-#define S_PERIOD     290  // Silent period
+#define T_PERIOD     5
+   // Transmission period
+#define S_PERIOD     1  // Silent period
 RTC_DATA_ATTR static uint8_t seq; // remember number of boots in RTC Memory
 
 uint16_t temp;
@@ -47,19 +43,17 @@ void setAdvData(BLEAdvertising *pAdvertising) {
 
 void setup() {
     M5.begin();
-    M5.Axp.ScreenBreath(10);    // 画面の輝度を下げる
+    M5.Axp.ScreenBreath(10);      // 画面の輝度を下げる
     M5.Lcd.setRotation(3);      // 左を上にする
     M5.Lcd.setTextSize(2);      // 文字サイズを2にする
     M5.Lcd.fillScreen(BLACK);   // 背景を黒にする
-
+    pinMode(GPIO_NUM_37,INPUT_PULLUP);
     Wire.begin();               // I2Cを初期化する
-    while (!bme.begin(0x76)) {  // BMP280を初期化する
-        M5.Lcd.println("BMP280 init fail");
-    }
 
-    temp = (uint16_t)(dht12.temperature * 100);
-    humid = (uint16_t)(dht12.humidity * 100);
-    press = (uint16_t)(bme.readPressure() / 100 * 10);
+
+    temp++;
+    humid++;
+    press++;
     vbat = (uint16_t)(M5.Axp.GetVbatData() * 1.1 / 1000 * 100);
 
     M5.Lcd.setCursor(0, 0, 1);
@@ -80,7 +74,11 @@ void setup() {
 
     seq++;                                             // シーケンス番号を更新
     delay(10);
-    esp_deep_sleep(1000000LL * S_PERIOD);              // S_PERIOD秒Deep Sleepする
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_37,LOW);
+    M5.Axp.ScreenBreath(0);
+    // M5.Axp.DeepSleep();              // S_PERIOD秒Deep Sleepする
+    // esp_deep_sleep(1000000LL * S_PERIOD);              // S_PERIOD秒Deep Sleepする
+    esp_deep_sleep_start();
 }
 
 void loop() {
