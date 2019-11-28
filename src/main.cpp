@@ -5,15 +5,22 @@
 #include "BLEUtils.h"
 #include "esp_sleep.h"
 #include "sys/time.h"
+#include <WiFi.h>
 
 #define T_PERIOD 5
 // Transmission period
 #define S_PERIOD 1                 // Silent period
 RTC_DATA_ATTR static uint8_t seq;  // remember number of boots in RTC Memory
+RTC_TimeTypeDef rtc_time_struct;
+RTC_DateTypeDef rtc_date_struct;
 
 struct tm now;
 time_t tm_t;
 void setAdvData(BLEAdvertising *pAdvertising, struct tm now);
+
+const char* SSID = "すずのiphone";
+const char* PASSWORD = "ryo5502gga";
+const char* URL_NTP_SERVER = "ntp.jst.mfeed.ad.jp";
 
 void task_ble() {
   BLEDevice::init("AmbientEnv-02");                // デバイスを初期化
@@ -24,6 +31,38 @@ void task_ble() {
   pAdvertising->start();   // アドバタイジングデーターをセット
   delay(T_PERIOD * 1000);  // T_PERIOD秒アドバタイズする
   pAdvertising->stop();
+}
+
+void set_time(){
+  if(seq != 0) return;
+
+  WiFi.begin(SSID,PASSWORD);
+  while(WiFi.status() != WL_CONNECTED){
+    delay(500);
+    M5.Lcd.print(".");
+    
+  }
+  M5.Lcd.print("Wifi connected.");
+  configTime(9 * 3600 , 0, URL_NTP_SERVER);
+
+  struct tm _tm;
+  if(!getLocalTime(&_tm)) return ;
+
+  RTC_TimeTypeDef _time_struct;
+  _time_struct.Hours = _tm.tm_hour;
+  _time_struct.Minutes = _tm.tm_min;
+  _time_struct.Seconds = _tm.tm_sec;
+  M5.Rtc.SetTime(&_time_struct);
+
+  RTC_DateTypeDef _date_struct;
+  _date_struct.WeekDay = _tm.tm_wday;
+  _date_struct.Month = _tm.tm_mon + 1;
+  _date_struct.Date = _tm.tm_mday;
+  _date_struct.Year = _tm.tm_year + 1900;
+  M5.Rtc.SetData(&_date_struct);
+
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
 }
 
 void task_lcd() {
@@ -37,7 +76,20 @@ void task_lcd() {
 }
 
 void setAdvData(BLEAdvertising *pAdvertising, struct tm now) {
-  tm_t = mktime(&now);
+  M5.Rtc.GetTime(&rtc_time_struct);
+  M5.Rtc.GetData(&rtc_date_struct);
+
+  struct tm _tm;
+  _tm.tm_hour = rtc_time_struct.Hours;
+  _tm.tm_mday = rtc_date_struct.Date;
+  _tm.tm_min = rtc_time_struct.Minutes;
+  _tm.tm_mon = rtc_date_struct.Month;
+  _tm.tm_sec = rtc_time_struct.Seconds;
+  _tm.tm_wday = rtc_date_struct.WeekDay;
+  _tm.tm_year = rtc_date_struct.Year;
+
+  tm_t = mktime(&_tm); //&nowにするといい値?
+
 
   BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
 
@@ -61,6 +113,7 @@ void setAdvData(BLEAdvertising *pAdvertising, struct tm now) {
 
 void setup() {
   pinMode(GPIO_NUM_37, INPUT_PULLUP);
+  set_time();
   getLocalTime(&now,100);
   task_lcd();
   task_ble();
