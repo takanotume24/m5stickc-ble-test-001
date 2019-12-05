@@ -54,18 +54,18 @@ void set_time() {
   //   return;
   // }
 
-  RTC_TimeTypeDef _rtc_time_struct;
-  _rtc_time_struct.Hours = _tm.tm_hour;
-  _rtc_time_struct.Minutes = _tm.tm_min;
-  _rtc_time_struct.Seconds = _tm.tm_sec;
-  M5.Rtc.SetTime(&_rtc_time_struct);
+  RTC_TimeTypeDef _rtc_struct_time;
+  _rtc_struct_time.Hours = _tm.tm_hour;
+  _rtc_struct_time.Minutes = _tm.tm_min;
+  _rtc_struct_time.Seconds = _tm.tm_sec;
+  M5.Rtc.SetTime(&_rtc_struct_time);
 
-  RTC_DateTypeDef _rtc_date_struct;
-  _rtc_date_struct.WeekDay = _tm.tm_wday;
-  _rtc_date_struct.Month = _tm.tm_mon + 1;
-  _rtc_date_struct.Date = _tm.tm_mday;
-  _rtc_date_struct.Year = _tm.tm_year + 1900;
-  M5.Rtc.SetData(&_rtc_date_struct);
+  RTC_DateTypeDef _rtc_struct_date;
+  _rtc_struct_date.WeekDay = _tm.tm_wday;
+  _rtc_struct_date.Month = _tm.tm_mon + 1;
+  _rtc_struct_date.Date = _tm.tm_mday;
+  _rtc_struct_date.Year = _tm.tm_year + 1900;
+  M5.Rtc.SetData(&_rtc_struct_date);
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
 }
@@ -77,19 +77,19 @@ void setup_lcd() {
 }
 
 struct tm get_time_rtc(){
-  RTC_TimeTypeDef rtc_time_struct;
-  RTC_DateTypeDef rtc_date_struct;
-  M5.Rtc.GetTime(&rtc_time_struct);
-  M5.Rtc.GetData(&rtc_date_struct);
+  RTC_TimeTypeDef rtc_struct_time;
+  RTC_DateTypeDef rtc_struct_date;
+  M5.Rtc.GetTime(&rtc_struct_time);
+  M5.Rtc.GetData(&rtc_struct_date);
 
   struct tm _tm;
-  _tm.tm_hour = rtc_time_struct.Hours;
-  _tm.tm_mday = rtc_date_struct.Date;
-  _tm.tm_min = rtc_time_struct.Minutes;
-  _tm.tm_mon = rtc_date_struct.Month;
-  _tm.tm_sec = rtc_time_struct.Seconds;
-  _tm.tm_wday = rtc_date_struct.WeekDay;
-  _tm.tm_year = rtc_date_struct.Year;
+  _tm.tm_hour = rtc_struct_time.Hours;
+  _tm.tm_mday = rtc_struct_date.Date;
+  _tm.tm_min = rtc_struct_time.Minutes;
+  _tm.tm_mon = rtc_struct_date.Month;
+  _tm.tm_sec = rtc_struct_time.Seconds;
+  _tm.tm_wday = rtc_struct_date.WeekDay;
+  _tm.tm_year = rtc_struct_date.Year;
   return _tm;
 }
 void show_time() {
@@ -103,29 +103,29 @@ void show_time() {
                 _tm.tm_mday, _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
 };
 
-void setAdvData(BLEAdvertising *pAdvertising) {
+void setAdvData(BLEAdvertising *p_advertising) {
   struct tm _tm = get_time_rtc();
 
   time_t _time = mktime(&_tm);  //&nowにするといい値?
 
-  BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
+  BLEAdvertisementData advertisement_data = BLEAdvertisementData();
 
-  oAdvertisementData.setFlags(
+  advertisement_data.setFlags(
       0x06);  // BR_EDR_NOT_SUPPORTED | LE General Discoverable Mode
 
-  std::string strServiceData = "";
-  strServiceData += (char)8;     // 長さ
-  strServiceData += (char)0xff;  // AD Type 0xFF: Manufacturer specific data
-  strServiceData += (char)0xff;  // Test manufacture ID low byte
-  strServiceData += (char)0xff;  // Test manufacture ID high byte
-  strServiceData += (char)seq++;
-  strServiceData += (char)(_time & 0xff);
-  strServiceData += (char)((_time >> 8) & 0xff);
-  strServiceData += (char)((_time >> 16) & 0xff);
-  strServiceData += (char)((_time >> 24) & 0xff);
+  std::string str_service_data = "";
+  str_service_data += (char)8;     // 長さ
+  str_service_data += (char)0xff;  // AD Type 0xFF: Manufacturer specific data
+  str_service_data += (char)0xff;  // Test manufacture ID low byte
+  str_service_data += (char)0xff;  // Test manufacture ID high byte
+  str_service_data += (char)seq++;
+  str_service_data += (char)(_time & 0xff);
+  str_service_data += (char)((_time >> 8) & 0xff);
+  str_service_data += (char)((_time >> 16) & 0xff);
+  str_service_data += (char)((_time >> 24) & 0xff);
 
-  oAdvertisementData.addData(strServiceData);
-  pAdvertising->setAdvertisementData(oAdvertisementData);
+  advertisement_data.addData(str_service_data);
+  p_advertising->setAdvertisementData(advertisement_data);
 }
 
 void setup() {
