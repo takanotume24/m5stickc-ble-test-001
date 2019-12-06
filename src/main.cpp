@@ -24,6 +24,16 @@ void print_error(String str) {
   M5.Lcd.printf("%s", str.c_str());
   delay(1000);
 }
+
+void clear_screen(){
+  M5.Lcd.fillScreen(TFT_BLACK);
+  M5.Lcd.setCursor(0, 0);
+}
+
+int convert_wday(uint8_t wday){
+}
+
+
 void task_ble() {
   BLEDevice::init("M5StickC");                     // デバイスを初期化
   BLEServer *pServer = BLEDevice::createServer();  // サーバーを生成
@@ -45,7 +55,6 @@ void set_time() {
   }
   M5.Lcd.print("Wifi connected.");
   configTime(9 * 3600, 0, URL_NTP_SERVER);
-
 
   struct tm _tm;
   getLocalTime(&_tm);
@@ -76,7 +85,7 @@ void setup_lcd() {
   M5.Lcd.setTextSize(1);    // 文字サイズを2にする
 }
 
-struct tm get_time_rtc(){
+struct tm get_time_rtc() {
   RTC_TimeTypeDef rtc_struct_time;
   RTC_DateTypeDef rtc_struct_date;
   M5.Rtc.GetTime(&rtc_struct_time);
@@ -86,21 +95,19 @@ struct tm get_time_rtc(){
   _tm.tm_hour = rtc_struct_time.Hours;
   _tm.tm_mday = rtc_struct_date.Date;
   _tm.tm_min = rtc_struct_time.Minutes;
-  _tm.tm_mon = rtc_struct_date.Month;
+  _tm.tm_mon = rtc_struct_date.Month - 1;
   _tm.tm_sec = rtc_struct_time.Seconds;
-  _tm.tm_wday = rtc_struct_date.WeekDay;
-  _tm.tm_year = rtc_struct_date.Year;
+  _tm.tm_year = rtc_struct_date.Year - 1900;
+  _tm.tm_isdst = -1;
   return _tm;
 }
 void show_time() {
-  struct tm _tm = get_time_rtc();;
-  //getLocalTime(&_tm, 100);
-  M5.Lcd.fillScreen(TFT_BLACK);
-  M5.Lcd.setCursor(0, 0);
-  M5.Lcd.printf("seq: %d\r\n", seq);
-  M5.Lcd.printf("tm:\r\n");
-  M5.Lcd.printf("%d/%d/%d %d:%d:%d'\r\n", _tm.tm_year, _tm.tm_mon,
-                _tm.tm_mday, _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
+  struct tm _tm = get_time_rtc();
+  clear_screen();
+  M5.Lcd.printf("seq: %d\n", seq);
+  M5.Lcd.printf("time_t:%ld\n",mktime(&_tm));
+  M5.Lcd.printf("%d/%d/%d %d:%d:%d'\n", _tm.tm_year + 1900, _tm.tm_mon + 1, _tm.tm_mday,
+                _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
 };
 
 void setAdvData(BLEAdvertising *p_advertising) {
@@ -114,15 +121,16 @@ void setAdvData(BLEAdvertising *p_advertising) {
       0x06);  // BR_EDR_NOT_SUPPORTED | LE General Discoverable Mode
 
   std::string str_service_data = "";
-  str_service_data += (char)8;     // 長さ
-  str_service_data += (char)0xff;  // AD Type 0xFF: Manufacturer specific data
-  str_service_data += (char)0xff;  // Test manufacture ID low byte
-  str_service_data += (char)0xff;  // Test manufacture ID high byte
-  str_service_data += (char)seq++;
-  str_service_data += (char)(_time & 0xff);
-  str_service_data += (char)((_time >> 8) & 0xff);
-  str_service_data += (char)((_time >> 16) & 0xff);
-  str_service_data += (char)((_time >> 24) & 0xff);
+  str_service_data += (uint8_t)8;  // 長さ
+  str_service_data +=
+      (uint8_t)0xff;  // AD Type 0xFF: Manufacturer specific data
+  str_service_data += (uint8_t)0xff;  // Test manufacture ID low byte
+  str_service_data += (uint8_t)0xff;  // Test manufacture ID high byte
+  str_service_data += (uint8_t)seq++;
+  str_service_data += (uint8_t)(_time & 0xff);
+  str_service_data += (uint8_t)((_time >> 8) & 0xff);
+  str_service_data += (uint8_t)((_time >> 16) & 0xff);
+  str_service_data += (uint8_t)((_time >> 24) & 0xff);
 
   advertisement_data.addData(str_service_data);
   p_advertising->setAdvertisementData(advertisement_data);
