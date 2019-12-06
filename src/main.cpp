@@ -30,9 +30,6 @@ void clear_screen(){
   M5.Lcd.setCursor(0, 0);
 }
 
-int convert_wday(uint8_t wday){
-}
-
 
 void task_ble() {
   BLEDevice::init("M5StickC");                     // デバイスを初期化
@@ -53,15 +50,11 @@ void set_time() {
     delay(500);
     M5.Lcd.print(".");
   }
-  M5.Lcd.print("Wifi connected.");
+  M5.Lcd.print("Wifi connected.(^_^)");
   configTime(9 * 3600, 0, URL_NTP_SERVER);
 
   struct tm _tm;
-  getLocalTime(&_tm);
-  // if(!getLocalTime(&_tm, 100)) {
-  //   print_error("getLocalTime faild >_<");
-  //   return;
-  // }
+  getLocalTime(&_tm); 
 
   RTC_TimeTypeDef _rtc_struct_time;
   _rtc_struct_time.Hours = _tm.tm_hour;
@@ -112,8 +105,11 @@ void show_time() {
 
 void setAdvData(BLEAdvertising *p_advertising) {
   struct tm _tm = get_time_rtc();
+  if(seq == 0){
+    _tm.tm_hour += 9; //TODO この時だけなぜかUTC?になる｡
+  }
 
-  time_t _time = mktime(&_tm);  //&nowにするといい値?
+  time_t _time = mktime(&_tm);  
 
   BLEAdvertisementData advertisement_data = BLEAdvertisementData();
 
@@ -141,7 +137,6 @@ void setup() {
   setup_lcd();
   pinMode(GPIO_NUM_37, INPUT_PULLUP);
   set_time();
-  // getLocalTime(&now,100);
   show_time();
   task_ble();
   M5.Axp.ScreenBreath(0);
