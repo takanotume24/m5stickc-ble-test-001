@@ -25,14 +25,13 @@ void print_error(String str) {
   delay(1000);
 }
 
-void clear_screen(){
+void clear_screen() {
   M5.Lcd.fillScreen(TFT_BLACK);
   M5.Lcd.setCursor(0, 0);
 }
 
-
 void task_ble() {
-  BLEDevice::init("M5StickC");                     // デバイスを初期化
+  BLEDevice::init("takuya");                       // デバイスを初期化
   BLEServer *pServer = BLEDevice::createServer();  // サーバーを生成
   BLEAdvertising *pAdvertising =
       pServer->getAdvertising();  // アドバタイズオブジェクトを取得
@@ -54,7 +53,7 @@ void set_time() {
   configTime(9 * 3600, 0, URL_NTP_SERVER);
 
   struct tm _tm;
-  getLocalTime(&_tm); 
+  getLocalTime(&_tm);
 
   RTC_TimeTypeDef _rtc_struct_time;
   _rtc_struct_time.Hours = _tm.tm_hour;
@@ -98,25 +97,27 @@ void show_time() {
   struct tm _tm = get_time_rtc();
   clear_screen();
   M5.Lcd.printf("seq: %d\n", seq);
-  M5.Lcd.printf("time_t:%ld\n",mktime(&_tm));
-  M5.Lcd.printf("%d/%d/%d %d:%d:%d'\n", _tm.tm_year + 1900, _tm.tm_mon + 1, _tm.tm_mday,
-                _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
+  M5.Lcd.printf("time_t:%ld\n", mktime(&_tm));
+  M5.Lcd.printf("%d/%d/%d %d:%d:%d'\n", _tm.tm_year + 1900, _tm.tm_mon + 1,
+                _tm.tm_mday, _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
 };
 
 void setAdvData(BLEAdvertising *p_advertising) {
   struct tm _tm = get_time_rtc();
-  if(seq == 0){
-    _tm.tm_hour += 9; //TODO この時だけなぜかUTC?になる｡
+  if (seq == 0) {
+    _tm.tm_hour += 9;  // TODO この時だけなぜかUTC?になる｡
   }
 
-  time_t _time = mktime(&_tm);  
+  time_t _time = mktime(&_tm);
 
   BLEAdvertisementData advertisement_data = BLEAdvertisementData();
 
   advertisement_data.setFlags(
       0x06);  // BR_EDR_NOT_SUPPORTED | LE General Discoverable Mode
+  std::string user_name = "takuya";
 
   std::string str_service_data = "";
+
   str_service_data += (uint8_t)8;  // 長さ
   str_service_data +=
       (uint8_t)0xff;  // AD Type 0xFF: Manufacturer specific data
@@ -127,6 +128,11 @@ void setAdvData(BLEAdvertising *p_advertising) {
   str_service_data += (uint8_t)((_time >> 8) & 0xff);
   str_service_data += (uint8_t)((_time >> 16) & 0xff);
   str_service_data += (uint8_t)((_time >> 24) & 0xff);
+  str_service_data += (uint8_t)user_name.length();
+  
+  for (int i = 0; i < user_name.length(); i++) {
+    str_service_data += (uint8_t)user_name[i];
+  }
 
   advertisement_data.addData(str_service_data);
   p_advertising->setAdvertisementData(advertisement_data);
