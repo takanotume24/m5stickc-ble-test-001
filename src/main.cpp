@@ -1,6 +1,7 @@
 #include <M5StickC.h>
 #include <WiFi.h>
 #include <Wire.h>
+#include <random>
 #include "BLEDevice.h"
 #include "BLEServer.h"
 #include "BLEUtils.h"
@@ -9,8 +10,8 @@
 
 #define T_PERIOD 5
 // Transmission period
-#define S_PERIOD 1                 // Silent period
-RTC_DATA_ATTR static uint8_t seq;  // remember number of boots in RTC Memory
+#define S_PERIOD 1                     // Silent period
+RTC_DATA_ATTR static uint8_t seq = 0;  // remember number of boots in RTC Memory
 
 // struct tm now;
 void setAdvData(BLEAdvertising *pAdvertising);
@@ -18,6 +19,7 @@ void setAdvData(BLEAdvertising *pAdvertising);
 const char *SSID = "すずのiphone";
 const char *PASSWORD = "ryo5502gga";
 const char *URL_NTP_SERVER = "ntp.jst.mfeed.ad.jp";
+std::string user_name = "suzu";
 
 void print_error(String str) {
   M5.Lcd.setCursor(0, 0);
@@ -31,7 +33,7 @@ void clear_screen() {
 }
 
 void task_ble() {
-  BLEDevice::init("takuya");                       // デバイスを初期化
+  BLEDevice::init(user_name);                      // デバイスを初期化
   BLEServer *pServer = BLEDevice::createServer();  // サーバーを生成
   BLEAdvertising *pAdvertising =
       pServer->getAdvertising();  // アドバタイズオブジェクトを取得
@@ -74,7 +76,7 @@ void set_time() {
 void setup_lcd() {
   M5.Axp.ScreenBreath(10);  // 画面の輝度を下げる
   M5.Lcd.setRotation(1);    // 左を上にする
-  M5.Lcd.setTextSize(1);    // 文字サイズを2にする
+  M5.Lcd.setTextSize(2);    // 文字サイズを2にする
 }
 
 struct tm get_time_rtc() {
@@ -96,9 +98,10 @@ struct tm get_time_rtc() {
 void show_time() {
   struct tm _tm = get_time_rtc();
   clear_screen();
+  M5.Lcd.printf("name: %s\n", user_name.c_str());
   M5.Lcd.printf("seq: %d\n", seq);
-  M5.Lcd.printf("time_t:%ld\n", mktime(&_tm));
-  M5.Lcd.printf("%d/%d/%d %d:%d:%d'\n", _tm.tm_year + 1900, _tm.tm_mon + 1,
+  // M5.Lcd.printf("time_t:%ld\n", mktime(&_tm));
+  M5.Lcd.printf("%d/%d/%d \n%d:%d:%d'\n", _tm.tm_year + 1900, _tm.tm_mon + 1,
                 _tm.tm_mday, _tm.tm_hour, _tm.tm_min, _tm.tm_sec);
 };
 
@@ -114,26 +117,26 @@ void setAdvData(BLEAdvertising *p_advertising) {
 
   advertisement_data.setFlags(
       0x06);  // BR_EDR_NOT_SUPPORTED | LE General Discoverable Mode
-  std::string user_name = "takuya";
 
   std::string str_service_data = "";
 
-  str_service_data += (uint8_t)8;  // 長さ
+  str_service_data += (uint8_t)8 + 1 + user_name.length();  // 長さ
   str_service_data +=
       (uint8_t)0xff;  // AD Type 0xFF: Manufacturer specific data
   str_service_data += (uint8_t)0xff;  // Test manufacture ID low byte
   str_service_data += (uint8_t)0xff;  // Test manufacture ID high byte
-  str_service_data += (uint8_t)seq++;
+  str_service_data += (uint8_t)seq;
   str_service_data += (uint8_t)(_time & 0xff);
   str_service_data += (uint8_t)((_time >> 8) & 0xff);
   str_service_data += (uint8_t)((_time >> 16) & 0xff);
   str_service_data += (uint8_t)((_time >> 24) & 0xff);
   str_service_data += (uint8_t)user_name.length();
-  
+
   for (int i = 0; i < user_name.length(); i++) {
     str_service_data += (uint8_t)user_name[i];
   }
 
+  seq = esp_random();
   advertisement_data.addData(str_service_data);
   p_advertising->setAdvertisementData(advertisement_data);
 }
