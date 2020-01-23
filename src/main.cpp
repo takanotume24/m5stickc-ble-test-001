@@ -132,8 +132,8 @@ void setAdvData(BLEAdvertising *p_advertising) {
   str_service_data += (uint8_t)((_time >> 24) & 0xff);
   str_service_data += (uint8_t)user_name.length();
 
-  for (int i = 0; i < user_name.length(); i++) {
-    str_service_data += (uint8_t)user_name[i];
+  for (auto iter = user_name.begin(); iter != user_name.end(); iter++) {
+    str_service_data += (uint8_t)*iter;
   }
 
   seq = esp_random();
