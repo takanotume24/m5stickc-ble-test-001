@@ -16,7 +16,7 @@ RTC_DATA_ATTR static uint8_t seq = 0;  // remember number of boots in RTC Memory
 // struct tm now;
 void setAdvData(BLEAdvertising *pAdvertising);
 
-const char *SSID = "すずのiphone";
+const char *SSID = "h2o";
 const char *PASSWORD = "ryo5502gga";
 const char *URL_NTP_SERVER = "ntp.jst.mfeed.ad.jp";
 std::string user_name = "suzu";
